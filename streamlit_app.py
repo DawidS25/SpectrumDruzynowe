@@ -139,7 +139,7 @@ def draw_question():
     return question
 
 # ------------------------------
-# SETUP - wybór drużyn i graczy (TYLKO IMIONA, bez opcji bez imion)
+# SETUP - wybór drużyn i graczy
 # ------------------------------
 if st.session_state.step in ["setup", "categories", "end"]:
     st.title("🎲 Spectrum")
@@ -147,11 +147,11 @@ if st.session_state.step in ["setup", "categories", "end"]:
 if st.session_state.step == "setup":
     st.header("🎭 Wprowadź nazwy drużyn i imiona graczy")
 
+    # Inicjalizacja sesji
     if "team_names" not in st.session_state:
         st.session_state.team_names = ["Niebiescy", "Czerwoni"]
-
     if "players_team_0" not in st.session_state:
-        st.session_state.players_team_0 = ["", ""]  # start z 2 polami
+        st.session_state.players_team_0 = ["", ""]
     if "players_team_1" not in st.session_state:
         st.session_state.players_team_1 = ["", ""]
 
@@ -162,22 +162,22 @@ if st.session_state.step == "setup":
     with col2:
         st.session_state.team_names[1] = st.text_input("👫 Nazwa drużyny 2", value=st.session_state.team_names[1])
 
-    # Funkcja renderująca pola z imionami i przyciskiem dodaj
+    # Funkcja renderująca pola imion graczy
     def render_players_inputs(team_index):
         st.write(f"**Imiona graczy drużyny {st.session_state.team_names[team_index]}:**")
         players_key = f"players_team_{team_index}"
         players_list = st.session_state[players_key]
 
-        # Wyświetl pola tekstowe
         for i, player_name in enumerate(players_list):
-            new_name = st.text_input(f"🙋‍♂️ Imię {i + 1}. osoby z drużyny {st.session_state.team_names[team_index]}",
-                                    value=player_name, key=f"player_{team_index}_{i}")
+            new_name = st.text_input(
+                f"🙋‍♂️ Imię {i + 1}. osoby z drużyny {st.session_state.team_names[team_index]}",
+                value=player_name,
+                key=f"player_{team_index}_{i}"
+            )
             st.session_state[players_key][i] = new_name.strip()
 
-        # Przycisk dodawania kolejnego gracza (max 7)
         if len(players_list) < 7:
-            if st.button(f"➕ Dodaj kolejnego gracza do drużyny {st.session_state.team_names[team_index]}",
-                         key=f"add_player_{team_index}"):
+            if st.button(f"➕ Dodaj kolejnego gracza do drużyny {st.session_state.team_names[team_index]}", key=f"add_player_{team_index}"):
                 st.session_state[players_key].append("")
                 st.rerun()
 
@@ -187,53 +187,55 @@ if st.session_state.step == "setup":
     with col2:
         render_players_inputs(1)
 
-    # Walidacja - wymuszamy min 2 graczy na drużynę, max 7
+    # Walidacja liczby graczy
     def valid_players_count():
         len0 = len([p for p in st.session_state.players_team_0 if p.strip()])
         len1 = len([p for p in st.session_state.players_team_1 if p.strip()])
-        if len0 < 2 or len1 < 2:
-            return False
-        if len0 > 7 or len1 > 7:
-            return False
-        return True
+        return 2 <= len0 <= 7 and 2 <= len1 <= 7
 
     if not valid_players_count():
         st.warning("⚠️ Każda drużyna musi mieć od 2 do 7 graczy (łącznie minimum 4, maksimum 14 imion).")
 
-    # Przycisk Dalej tylko jeśli valid
     if valid_players_count():
         if st.button("✅ Dalej"):
-            # Zapisz nazw drużyn i graczy
+            # Inicjalizacja punktów i danych
             st.session_state.scores = {}
             st.session_state.results_data = []
-            st.session_state.team_names = [st.session_state.team_names[0], st.session_state.team_names[1]]
 
-            # Lista wszystkich graczy, żeby ułatwić dalszą obsługę
+            team_0_key = st.session_state.team_names[0]
+            team_1_key = st.session_state.team_names[1]
             all_players = []
+
             for p in st.session_state.players_team_0:
                 if p.strip():
-                    all_players.append(p.strip() + "_niebiescy")
+                    player_key = f"{p.strip()}_{team_0_key}"
+                    all_players.append(player_key)
+
             for p in st.session_state.players_team_1:
                 if p.strip():
-                    all_players.append(p.strip() + "_czerwoni")
+                    player_key = f"{p.strip()}_{team_1_key}"
+                    all_players.append(player_key)
+
             st.session_state.all_players = all_players
 
-            # Punktacja dla drużyn i graczy
+            # Inicjalizacja punktacji graczy
             for p in all_players:
                 st.session_state.scores[p] = 0
 
-            # Punktacja dla drużyn (klucze nazwy drużyn)
-            for t in st.session_state.team_names:
-                st.session_state.scores[t] = 0
+            # Punktacja drużyn
+            st.session_state.scores[team_0_key] = 0
+            st.session_state.scores[team_1_key] = 0
 
-            # Przypisujemy listy graczy do team_players
+            # Przypisanie listy graczy do drużyn
             st.session_state.team_players = {
-                st.session_state.team_names[0]: [p for p in st.session_state.players_team_0 if p.strip()],
-                st.session_state.team_names[1]: [p for p in st.session_state.players_team_1 if p.strip()]
+                team_0_key: [p for p in st.session_state.players_team_0 if p.strip()],
+                team_1_key: [p for p in st.session_state.players_team_1 if p.strip()]
             }
 
+            # Przejście dalej
             st.session_state.step = "categories"
             st.rerun()
+
 
 # ------------------------------
 # KATEGORIE - bez zmian
@@ -275,28 +277,37 @@ if st.session_state.step == "game":
     team2_players = st.session_state.team_players.get(team2, [])
     use_players = st.session_state.use_players  # zawsze True teraz
 
+    # Inicjalizacja słownika scores dla drużyn
+    for team in [team1, team2]:
+        if team not in st.session_state.scores:
+            st.session_state.scores[team] = 0
+        for player in st.session_state.team_players.get(team, []):
+            player_id = f"{player}_{team.lower()}"
+            if player_id not in st.session_state.scores:
+                st.session_state.scores[player_id] = 0
+
     max_players = max(len(team1_players), len(team2_players))
-    questions_per_round = max_players * 2  # każde pytanie dla jednej z drużyn, razem na rundę tyle pytań
+    questions_per_round = max_players * 2
 
     current_q_num = st.session_state.questions_asked
     current_round = (current_q_num // questions_per_round) + 1
     question_in_round = (current_q_num % questions_per_round) + 1
 
-    # --- EKRAN POTWIERDZENIA KONTYNUACJI PO RUNDZIE ---
     if st.session_state.ask_continue:
-        st.markdown(f"### 🥊 Koniec rundy {current_round - 1}")
+        st.header("❓ Czy chcesz kontynuować grę?")
+        st.write(f"🥊 Rozegrane rundy: {current_round - 1} -> {max_players * 2} pytań 🧠")
+        #st.markdown(f"### 🥊 Koniec rundy {current_round - 1}")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("▶️ Kontynuuj do kolejnej rundy"):
+            if st.button("✅ Tak, kontynuuj"):
                 st.session_state.ask_continue = False
                 st.session_state.current_question = draw_question()
                 st.rerun()
         with col2:
-            if st.button("⏹️ Zakończ grę"):
+            if st.button("❌ Zakończ i pokaż wyniki"):
                 st.session_state.step = "end"
                 st.rerun()
         st.stop()
-
 
     if not st.session_state.current_question:
         q = draw_question()
@@ -320,11 +331,10 @@ if st.session_state.step == "game":
             st.session_state.current_question = new_q
         st.rerun()
 
-    # Odpowiadający i zgadujący — zgaduje ta sama drużyna co odpowiadający
     if current_q_num % 2 == 0:
         responding_team = team1
-        guessing_team = team1  # zgaduje ta sama drużyna co odpowiadający
-        other_team = team2    # przeciwnik, który może dostać punkty dodatkowe
+        guessing_team = team1
+        other_team = team2
         responder_idx = (current_q_num // 2) % len(team1_players)
         responder = team1_players[responder_idx]
     else:
@@ -337,7 +347,6 @@ if st.session_state.step == "game":
     st.markdown(f"Odpowiada: **{responder}** ({responding_team})")
     st.markdown(f"Zgadują: **{guessing_team}**")
 
-    # Punkty dla zgadującej drużyny (tej samej co odpowiadający)
     st.markdown(f"**Ile punktów zdobywają {guessing_team}?**")
     if "guesser_points" not in st.session_state:
         st.session_state.guesser_points = None
@@ -349,7 +358,6 @@ if st.session_state.step == "game":
             st.session_state.guesser_points = val
             st.rerun()
 
-    # Punkty dodatkowe dla drużyny przeciwnika
     st.markdown(f"**Dodatkowe punkty dla drużyny {other_team}?**")
     extra_points_options = [0, 1]
 
@@ -365,30 +373,25 @@ if st.session_state.step == "game":
 
     if st.session_state.guesser_points is not None and st.session_state.extra_point is not None:
         if st.button("💾 Zapisz i dalej"):
-
             guesser_points = st.session_state.guesser_points
             extra_point = st.session_state.extra_point
 
-            # Reset wyborów
             st.session_state.guesser_points = None
             st.session_state.extra_point = None
 
-            # Przydziel punkty:
-            # - zgadująca drużyna (ta sama co odpowiadający) dostaje punkty za zgadywanie
             st.session_state.scores[guessing_team] += guesser_points
-            # - drużyna przeciwna dostaje punkty dodatkowe
             st.session_state.scores[other_team] += extra_point
 
-            # Punkty dla gracza odpowiadającego:
-            responder_points = 0
-            responder_points += guesser_points
+            responder_points = guesser_points
 
             def player_key(player_name, team_name):
                 return f"{player_name}_{team_name.lower()}"
 
-            st.session_state.scores[player_key(responder, responding_team)] += responder_points
+            player_id = player_key(responder, responding_team)
+            if player_id not in st.session_state.scores:
+                st.session_state.scores[player_id] = 0
+            st.session_state.scores[player_id] += responder_points
 
-            # Zapis wyników rundy
             data_to_save = {
                 "runda": current_round,
                 "pytanie_nr": current_q_num + 1,
@@ -405,10 +408,8 @@ if st.session_state.step == "game":
                 st.session_state.results_data = []
             st.session_state.results_data.append(data_to_save)
 
-            # Aktualizuj licznik pytań
             st.session_state.questions_asked += 1
 
-            # Po zakończeniu rundy pytaj o kontynuację
             if st.session_state.questions_asked % questions_per_round == 0:
                 st.session_state.ask_continue = True
                 st.session_state.current_question = None
@@ -416,7 +417,6 @@ if st.session_state.step == "game":
                 st.session_state.current_question = draw_question()
 
             st.rerun()
-
 
 
 # ------------------------------
@@ -445,7 +445,7 @@ if st.session_state.step == "end":
         trophy = trophies[i] if i < len(trophies) else ""
         odp = points_by_team[team]["odpowiadanie"]
         zgad = points_by_team[team]["zgadywanie"]
-        st.write(f"{trophy} {team} - {score} punktów ({zgad} za zgadywanie + {odp} dodatkowo)")
+        st.write(f"{trophy} {team}: {score} punktów ({zgad} za zgadywanie + {odp} dodatkowo)")
 
     # --- RANKING GRACZY ---
     st.markdown("---")
