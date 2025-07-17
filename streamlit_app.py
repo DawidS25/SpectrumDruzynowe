@@ -344,8 +344,9 @@ if st.session_state.step == "game":
         responder_idx = (current_q_num // 2) % len(team2_players)
         responder = team2_players[responder_idx]
 
-    st.markdown(f"Odpowiada: **{responder}** ({responding_team})")
-    st.markdown(f"Zgadują: **{guessing_team}**")
+    #st.markdown(f"Odpowiada: **{responder}** ({responding_team})")
+    #st.markdown(f"Zgadują: **{guessing_team}**")
+    st.markdown(f"Odpowiada: **{responder}** &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; Zgadują: **{guessing_team}**", unsafe_allow_html=True)
 
     st.markdown(f"**Ile punktów zdobywają {guessing_team}?**")
     if "guesser_points" not in st.session_state:
