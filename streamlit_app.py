@@ -546,7 +546,7 @@ if st.session_state.step == "end":
             with open(temp_filename, "wb") as f:
                 f.write(data)
 
-            repo = "DawidS25/Spectrum"
+            repo = "DawidS25/SpectrumDruzynowe"
             try:
                 token = st.secrets["GITHUB_TOKEN"]
             except Exception:
@@ -567,7 +567,7 @@ if st.session_state.step == "end":
                 else:
                     st.error(f"❌ Błąd zapisu: {response.status_code} – {response.json()}")
             else:
-                st.warning("⚠️ Nie udało się zapisać wyników online")
+                st.warning("⚠️ Nie udało się zapisać wyników online.")
 
 # git pull origin main --rebase
 # git add .
